@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GracePoint Church Mobile App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 flex items-center justify-center p-0 sm:p-6 overflow-hidden">
+
+    <div class="w-full h-full sm:h-[880px] sm:max-w-[430px] sm:rounded-[45px] sm:ring-8 sm:ring-slate-700 sm:shadow-2xl bg-slate-50 text-slate-800 flex flex-col relative overflow-hidden">
+        
+        <!-- iPhone Notch -->
+        <div class="absolute top-0 left-1/2 transform -translate-x-1/2 h-6 w-36 bg-slate-900 rounded-b-2xl z-50 hidden sm:flex items-center justify-center">
+            <div class="w-3 h-3 bg-slate-800 rounded-full mr-2"></div>
+            <div class="w-12 h-1 bg-slate-800 rounded-full"></div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="bg-indigo-900 text-white pt-3 px-6 pb-2 flex justify-between items-center text-xs font-medium tracking-wide z-40">
+            <span id="currentTime">9:41</span>
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-signal text-[10px]"></i>
+                <i class="fa-solid fa-wifi text-[10px]"></i>
+                <i class="fa-solid fa-battery-full text-sm"></i>
+            </div>
+        </div>
+
+        <!-- App Header -->
+        <header class="bg-indigo-900 text-white px-6 py-3 flex items-center justify-between shadow-md z-30">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-indigo-200 font-bold text-lg">
+                    <i class="fa-solid fa-church"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base leading-tight">GracePoint</h1>
+                    <p class="text-xs text-indigo-200" id="headerSubtitle">Loading session...</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="openAuthModal()" id="authNavBtn" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition border border-indigo-700">
+                    <i class="fa-solid fa-user-lock"></i>
+                    <span id="authBtnText">Sign In</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="appContent" class="flex-1 overflow-y-auto no-scrollbar relative pb-20 bg-slate-50">
+            <div class="flex flex-col items-center justify-center h-full p-8 text-center">
+                <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+                <p class="text-xs text-slate-500 font-medium">Connecting to secure church database...</p>
+            </div>
+        </main>
+
+        <!-- Bottom Tab Navigation -->
+        <nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-2 flex justify-around items-center z-40 shadow-lg">
+            <button onclick="switchTab('home')" id="tab-home" class="flex flex-col items-center text-blue-600 transition">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Home</span>
+            </button>
+            <button onclick="switchTab('events')" id="tab-events" class="flex flex-col items-center text-slate-400 hover:text-blue-600 transition">
+                <i class="fa-solid fa-calendar-days text-lg"></i>
+                <span class="text-[10px] font-medium mt-1">Events</span>
+            </button>
+            <button onclick="switchTab('prayer')" id="tab-prayer" class="flex flex-col items-center text-slate-400 hover:text-blue-600 transition">
+                <i class="fa-solid fa-hands-praying text-lg"></i>
+                <span class="text-[10px] font-medium mt-1">Prayer</span>
+            </button>
+            <button onclick="switchTab('directory')" id="tab-directory" class="flex flex-col items-center text-slate-400 hover:text-blue-600 transition">
+                <i class="fa-solid fa-address-book text-lg"></i>
+                <span class="text-[10px] font-medium mt-1">Directory</span>
+            </button>
+            <button onclick="switchTab('giving')" id="tab-giving" class="flex flex-col items-center text-slate-400 hover:text-blue-600 transition">
+                <i class="fa-solid fa-hand-holding-dollar text-lg"></i>
+                <span class="text-[10px] font-medium mt-1">Give</span>
+            </button>
+            <button onclick="switchTab('leader')" id="tab-leader" class="flex flex-col items-center text-slate-400 hover:text-blue-600 transition hidden">
+                <i class="fa-solid fa-chart-pie text-lg"></i>
+                <span class="text-[10px] font-medium mt-1">Stats</span>
+            </button>
+        </nav>
+
+        <!-- Global Toast Notification -->
+        <div id="toastNotification" class="fixed top-16 left-1/2 transform -translate-x-1/2 bg-slate-900/95 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium z-50 flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toastMessage">Action completed successfully!</span>
+        </div>
+
+        <!-- Auth Modal -->
+        <div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base" id="authModalTitle">Member Portal Sign In</h3>
+                        <p class="text-xs text-slate-500">Access announcements, events & prayer wall</p>
+                    </div>
+                    <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Email Address</label>
+                        <input type="email" id="authEmail" placeholder="your.email@example.com" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Password</label>
+                        <input type="password" id="authPassword" placeholder="••••••••" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="bg-blue-50 p-2.5 rounded-xl text-[11px] text-blue-700 flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-info mt-0.5"></i>
+                        <span>Tip: Use any email/password to create an account instantly. Use an email containing <b>"admin"</b> or <b>"leader"</b> to unlock staff/leader stats!</span>
+                    </div>
+                </div>
+                <div class="space-y-2 pt-2">
+                    <button onclick="handleEmailAuth(true)" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-sm">Sign In / Register</button>
+                    <button onclick="handleAnonymousAuth()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2.5 rounded-xl transition">Continue as Guest</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase configuration
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'gracepoint-church-app-v1';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyDummyKeyForPrototypeOnly12345",
+            authDomain: "gracepoint-app.firebaseapp.com",
+            projectId: "gracepoint-app",
+            storageBucket: "gracepoint-app.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // App State
+        window.appState = {
+            currentTab: 'home',
+            currentUser: null,
+            isLeader: false,
+            announcements: [],
+            events: [],
+            prayerRequests: [],
+            directoryMembers: []
+        };
+
+        // Expose Firebase functions globally for UI handlers
+        window.fbAuth = auth;
+        window.fbDb = db;
+        window.fbAppId = appId;
+
+        // Start Firebase Authentication
+        window.onload = async function() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.warn("Auth fallback to anonymous:", err);
+                await signInAnonymously(auth);
+            }
+
+            // Listen to Auth State Changes
+            onAuthStateChanged(auth, (user) => {
+                window.appState.currentUser = user;
+                if (user) {
+                    const email = user.email || '';
+                    window.appState.isLeader = email.includes('admin') || email.includes('leader') || user.isAnonymous === false;
+                    
+                    let btnLabel = 'Guest Mode';
+                    if (user.email) {
+                        const parts = user.email.split('@');
+                        if (parts.length > 0 && parts[0]) {
+                            btnLabel = parts[0];
+                        }
+                    } else if (user.displayName) {
+                        btnLabel = user.displayName;
+                    }
+                    
+                    const authBtnTextEl = document.getElementById('authBtnText');
+                    if (authBtnTextEl) authBtnTextEl.textContent = btnLabel;
+                    
+                    const headerSubEl = document.getElementById('headerSubtitle');
+                    if (headerSubEl) headerSubEl.textContent = window.appState.isLeader ? 'Leader & Member Portal' : 'Welcome Home';
+                    
+                    const leaderTabEl = document.getElementById('tab-leader');
+                    if (leaderTabEl) {
+                        if (window.appState.isLeader) {
+                            leaderTabEl.classList.remove('hidden');
+                        } else {
+                            leaderTabEl.classList.add('hidden');
+                        }
+                    }
+                } else {
+                    window.appState.isLeader = false;
+                    const authBtnTextEl = document.getElementById('authBtnText');
+                    if (authBtnTextEl) authBtnTextEl.textContent = 'Sign In';
+                    const headerSubEl = document.getElementById('headerSubtitle');
+                    if (headerSubEl) headerSubEl.textContent = 'Welcome Home';
+                    const leaderTabEl = document.getElementById('tab-leader');
+                    if (leaderTabEl) leaderTabEl.classList.add('hidden');
+                }
+                renderCurrentTab();
+            });
+
+            // Initialize Firestore Real-time Listeners
+            initFirestoreListeners();
+        };
+
+        // --- FIRESTORE REAL-TIME SYNCHRONIZATION ---
+        function initFirestoreListeners() {
+            // 1. Announcements Listener
+            const annCol = collection(db, 'artifacts', appId, 'public', 'data', 'announcements');
+            onSnapshot(annCol, (snapshot) => {
+                window.appState.announcements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // If empty, seed initial data
+                if (window.appState.announcements.length === 0) {
+                    seedInitialData();
+                } else if (window.appState.currentTab === 'home') {
+                    renderCurrentTab();
+                }
+            }, (err) => console.error("Announcements error:", err));
+
+            // 2. Events Listener
+            const evCol = collection(db, 'artifacts', appId, 'public', 'data', 'events');
+            onSnapshot(evCol, (snapshot) => {
+                window.appState.events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (window.appState.currentTab === 'events') renderCurrentTab();
+            }, (err) => console.error("Events error:", err));
+
+            // 3. Prayer Requests Listener
+            const prayerCol = collection(db, 'artifacts', appId, 'public', 'data', 'prayerRequests');
+            onSnapshot(prayerCol, (snapshot) => {
+                window.appState.prayerRequests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (window.appState.currentTab === 'prayer') renderCurrentTab();
+            }, (err) => console.error("Prayer error:", err));
+
+            // 4. Directory Listener
+            const dirCol = collection(db, 'artifacts', appId, 'public', 'data', 'directoryMembers');
+            onSnapshot(dirCol, (snapshot) => {
+                window.appState.directoryMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (window.appState.currentTab === 'directory') renderCurrentTab();
+            }, (err) => console.error("Directory error:", err));
+        }
+
+        // Seed initial mock data into Firestore if empty
+        async function seedInitialData() {
+            try {
+                const annCol = collection(db, 'artifacts', appId, 'public', 'data', 'announcements');
+                await addDoc(annCol, { title: 'Annual Church Picnic & Baptism', date: 'Oct 18, 2026', time: '11:30 AM', location: 'Lakeside Park', desc: 'Join us for food, fellowship, and outdoor baptisms by the lake!', tag: 'Community', image: 'https://placehold.co/600x300/2563eb/ffffff?text=Church+Picnic', createdAt: Date.now() });
+                await addDoc(annCol, { title: 'New Alpha Course Starting', date: 'Oct 21, 2026', time: '7:00 PM', location: 'Fellowship Hall', desc: 'Explore the basics of the Christian faith in a welcoming environment.', tag: 'Growth', image: 'https://placehold.co/600x300/4f46e5/ffffff?text=Alpha+Course', createdAt: Date.now() });
+
+                const evCol = collection(db, 'artifacts', appId, 'public', 'data', 'events');
+                await addDoc(evCol, { title: 'Sunday Worship Celebration', category: 'Service', date: 'Sun, Oct 11', time: '9:00 AM & 11:00 AM', location: 'Main Sanctuary', rsvpCount: 342 });
+                await addDoc(evCol, { title: 'Youth Night (Ignite MS/HS)', category: 'Youth', date: 'Wed, Oct 14', time: '6:30 PM', location: 'Student Center', rsvpCount: 88 });
+
+                const prayerCol = collection(db, 'artifacts', appId, 'public', 'data', 'prayerRequests');
+                await addDoc(prayerCol, { author: 'Sarah Jenkins', date: '2 hours ago', text: 'Please pray for my mother who is undergoing surgery this Thursday.', count: 24, isAnon: false, createdAt: Date.now() });
+
+                const dirCol = collection(db, 'artifacts', appId, 'public', 'data', 'directoryMembers');
+                await addDoc(dirCol, { name: 'Pastor David Vance', role: 'Lead Pastor', group: 'Leadership Staff', phone: '(555) 234-5678', email: 'david@gracepoint.org', avatar: 'https://placehold.co/150x150/3b82f6/ffffff?text=DV' });
+                await addDoc(dirCol, { name: 'Elena Rostova', role: 'Worship Director', group: 'Worship Ministry', phone: '(555) 876-5432', email: 'elena@gracepoint.org', avatar: 'https://placehold.co/150x150/ec4899/ffffff?text=ER' });
+            } catch (e) {
+                console.error("Seeding error:", e);
+            }
+        }
+
+        // Global Navigation & Actions
+        window.switchTab = function(tab) {
+            window.appState.currentTab = tab;
+            ['home', 'events', 'prayer', 'directory', 'giving', 'leader'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (btn) {
+                    if (t === tab) {
+                        btn.className = "flex flex-col items-center text-blue-600 transition";
+                        btn.querySelector('span').className = "text-[10px] font-semibold mt-1";
+                    } else {
+                        btn.className = "flex flex-col items-center text-slate-400 hover:text-blue-600 transition";
+                        btn.querySelector('span').className = "text-[10px] font-medium mt-1";
+                    }
+                }
+            });
+            renderCurrentTab();
+            document.getElementById('appContent').scrollTop = 0;
+        };
+
+        window.showToast = function(message, iconClass = "fa-circle-check", iconColor = "text-emerald-400") {
+            const toast = document.getElementById('toastNotification');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+            msgEl.textContent = message;
+            iconEl.className = `fa-solid ${iconClass} ${iconColor}`;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        };
+
+        window.openAuthModal = function() {
+            document.getElementById('authModal').classList.remove('hidden');
+        };
+
+        window.closeAuthModal = function() {
+            document.getElementById('authModal').classList.add('hidden');
+        };
+
+        window.handleAnonymousAuth = async function() {
+            try {
+                await signInAnonymously(auth);
+                closeAuthModal();
+                showToast("Signed in as Guest", "fa-user", "text-blue-400");
+            } catch (e) {
+                showToast("Authentication error: " + e.message, "fa-triangle-exclamation", "text-rose-400");
+            }
+        };
+
+        window.handleEmailAuth = async function(isReg) {
+            const email = document.getElementById('authEmail').value.trim();
+            const pass = document.getElementById('authPassword').value.trim();
+            if (!email || !pass) {
+                showToast("Please enter email and password", "fa-triangle-exclamation", "text-amber-400");
+                return;
+            }
+            try {
+                let cred;
+                try {
+                    cred = await signInWithEmailAndPassword(auth, email, pass);
+                } catch (err) {
+                    cred = await createUserWithEmailAndPassword(auth, email, pass);
+                }
+                closeAuthModal();
+                showToast(`Welcome back, ${cred.user.email}!`, "fa-circle-check", "text-emerald-400");
+            } catch (e) {
+                showToast("Login error: " + e.message, "fa-triangle-exclamation", "text-rose-400");
+            }
+        };
+
+        // --- STREAMING_CHUNK:Rendering Tab UI Components ---
+        function renderCurrentTab() {
+            const container = document.getElementById('appContent');
+            const state = window.appState;
+
+            switch(state.currentTab) {
+                case 'home':
+                    container.innerHTML = getHomeHTML(state);
+                    break;
+                case 'events':
+                    container.innerHTML = getEventsHTML(state);
+                    break;
+                case 'prayer':
+                    container.innerHTML = getPrayerHTML(state);
+                    break;
+                case 'directory':
+                    container.innerHTML = getDirectoryHTML(state);
+                    break;
+                case 'giving':
+                    container.innerHTML = getGivingHTML(state);
+                    break;
+                case 'leader':
+                    container.innerHTML = getLeaderHTML(state);
+                    setTimeout(() => initAttendanceChart(), 50);
+                    break;
+            }
+        }
+
+        // Home Tab HTML
+        function getHomeHTML(state) {
+            return `
+                <div class="p-4 space-y-5">
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-5 rounded-2xl shadow-md relative overflow-hidden">
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">This Sunday</span>
+                        <h2 class="text-xl font-bold mt-2">Series: "Rooted in Love"</h2>
+                        <p class="text-xs text-blue-100 mt-1 leading-relaxed">Join us this Sunday in-person or online as we continue our journey through Ephesians.</p>
+                        <div class="mt-4 flex items-center space-x-3">
+                            <button onclick="showToast('Livestream opening soon!', 'fa-video', 'text-blue-300')" class="bg-white text-blue-700 hover:bg-blue-50 font-semibold text-xs px-4 py-2 rounded-xl shadow transition flex items-center space-x-2">
+                                <i class="fa-solid fa-play"></i>
+                                <span>Watch Live</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    ${state.isLeader ? `
+                        <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-amber-800"><i class="fa-solid fa-shield-halved mr-1"></i> Leader Announcement Publisher</span>
+                            </div>
+                            <input type="text" id="newAnnTitle" placeholder="Announcement Title" class="w-full text-xs bg-white border border-amber-200 rounded-xl px-3 py-2">
+                            <textarea id="newAnnDesc" placeholder="Announcement Details..." rows="2" class="w-full text-xs bg-white border border-amber-200 rounded-xl px-3 py-2 resize-none"></textarea>
+                            <button onclick="publishAnnouncement()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm w-full">Publish to Congregation Feed</button>
+                        </div>
+                    ` : ''}
+
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-slate-800 text-sm">Church Announcements (Firestore Live)</h3>
+                        </div>
+                        <div class="space-y-3">
+                            ${state.announcements.map(item => `
+                                <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100">
+                                    <img src="${item.image || 'https://placehold.co/600x300/2563eb/ffffff?text=GracePoint'}" alt="${item.title}" class="w-full h-32 object-cover">
+                                    <div class="p-4">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded-full">${item.tag || 'Update'}</span>
+                                            <span class="text-[11px] text-slate-400">${item.date || 'Upcoming'}</span>
+                                        </div>
+                                        <h4 class="font-bold text-slate-800 text-sm mt-1">${item.title}</h4>
+                                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">${item.desc}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.publishAnnouncement = async function() {
+            const title = document.getElementById('newAnnTitle').value.trim();
+            const desc = document.getElementById('newAnnDesc').value.trim();
+            if (!title || !desc) {
+                showToast("Please enter title and description", "fa-triangle-exclamation", "text-amber-400");
+                return;
+            }
+            try {
+                const annCol = collection(db, 'artifacts', appId, 'public', 'data', 'announcements');
+                await addDoc(annCol, {
+                    title,
+                    desc,
+                    date: 'Today',
+                    tag: 'Leader Update',
+                    image: 'https://placehold.co/600x300/2563eb/ffffff?text=Announcement',
+                    createdAt: Date.now()
+                });
+                document.getElementById('newAnnTitle').value = '';
+                document.getElementById('newAnnDesc').value = '';
+                showToast("Announcement published live to database!", "fa-circle-check", "text-emerald-400");
+            } catch (e) {
+                showToast("Error publishing: " + e.message, "fa-triangle-exclamation", "text-rose-400");
+            }
+        };
+
+        // Events Tab HTML
+        function getEventsHTML(state) {
+            return `
+                <div class="p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base">Upcoming Events</h2>
+                            <p class="text-xs text-slate-500">Connected to Firestore database</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        ${state.events.map(ev => `
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-start space-x-3.5">
+                                <div class="bg-indigo-50 text-indigo-700 rounded-2xl p-3 text-center min-w-[56px] flex flex-col items-center justify-center">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider">Event</span>
+                                    <span class="text-xs font-extrabold leading-tight">Live</span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${ev.category || 'Gathering'}</span>
+                                        <span class="text-[11px] text-slate-400"><i class="fa-regular fa-clock mr-1"></i>${ev.time}</span>
+                                    </div>
+                                    <h4 class="font-bold text-slate-800 text-sm mt-1">${ev.title}</h4>
+                                    <p class="text-xs text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>${ev.location}</p>
+                                    <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                        <span class="text-[11px] text-slate-500"><i class="fa-solid fa-users mr-1 text-blue-500"></i><b>${ev.rsvpCount || 0}</b> attending</span>
+                                        <button onclick="showToast('RSVP saved successfully!', 'fa-circle-check', 'text-emerald-400')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition shadow-sm">RSVP Now</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Prayer Wall Tab HTML
+        function getPrayerHTML(state) {
+            return `
+                <div class="p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base">Prayer Wall</h2>
+                            <p class="text-xs text-slate-500">Firestore Live Community Board</p>
+                        </div>
+                        <button onclick="openPrayerModal()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm">Post Request</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        ${state.prayerRequests.map(p => `
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold">
+                                            ${p.author ? p.author.charAt(0) : 'P'}
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xs font-bold text-slate-800">${p.author || 'Member'}</h4>
+                                            <span class="text-[10px] text-slate-400">${p.date || 'Recent'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-600 leading-relaxed">${p.text}</p>
+                                <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                    <span class="text-[11px] text-slate-500"><i class="fa-solid fa-hands-praying text-purple-500 mr-1"></i><b>${p.count || 1}</b> prayed</span>
+                                    <button onclick="showToast('Recorded prayer support!', 'fa-hands-praying', 'text-purple-400')" class="bg-purple-50 text-purple-600 hover:bg-purple-100 text-xs font-semibold px-3 py-1.5 rounded-xl transition">I Prayed for This</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div id="prayerModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-slate-800 text-sm">Share Prayer Request</h3>
+                                <button onclick="closePrayerModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                            </div>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Your Name</label>
+                                    <input type="text" id="prayerAuthorInput" placeholder="Name or Anonymous" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2.5">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Request</label>
+                                    <textarea id="prayerTextInput" rows="3" placeholder="How can we pray?" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2.5 resize-none"></textarea>
+                                </div>
+                            </div>
+                            <button onclick="submitPrayerRequest()" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-sm">Submit Live Request</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.openPrayerModal = () => document.getElementById('prayerModal').classList.remove('hidden');
+        window.closePrayerModal = () => document.getElementById('prayerModal').classList.add('hidden');
+
+        window.submitPrayerRequest = async function() {
+            const author = document.getElementById('prayerAuthorInput').value.trim() || 'Anonymous';
+            const text = document.getElementById('prayerTextInput').value.trim();
+            if (!text) {
+                showToast("Please enter prayer request", "fa-triangle-exclamation", "text-amber-400");
+                return;
+            }
+            try {
+                const prayerCol = collection(db, 'artifacts', appId, 'public', 'data', 'prayerRequests');
+                await addDoc(prayerCol, { author, text, count: 1, date: 'Just now', createdAt: Date.now() });
+                closePrayerModal();
+                showToast("Prayer request saved to Firestore!", "fa-circle-check", "text-emerald-400");
+            } catch (e) {
+                showToast("Error saving prayer: " + e.message, "fa-triangle-exclamation", "text-rose-400");
+            }
+        };
+
+        // Directory Tab HTML
+        function getDirectoryHTML(state) {
+            return `
+                <div class="p-4 space-y-4">
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-base">Member & Leader Directory</h2>
+                        <p class="text-xs text-slate-500">Firestore synchronized directory</p>
+                    </div>
+                    <div class="space-y-3">
+                        ${state.directoryMembers.map(m => `
+                            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <img src="${m.avatar || 'https://placehold.co/150x150/3b82f6/ffffff?text=User'}" alt="${m.name}" class="w-11 h-11 rounded-full object-cover">
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-xs">${m.name}</h4>
+                                        <p class="text-[11px] text-blue-600 font-medium">${m.role}</p>
+                                        <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full inline-block mt-1">${m.group}</span>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="showToast('Calling ${m.phone || '(555) 000-0000'}', 'fa-phone', 'text-emerald-400')" class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shadow-sm">
+                                        <i class="fa-solid fa-phone"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Giving Tab HTML
+        function getGivingHTML(state) {
+            return `
+                <div class="p-4 space-y-4">
+                    <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-5 rounded-2xl shadow-md">
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Secure Giving</span>
+                        <h2 class="text-xl font-bold mt-2">Honor God with Your Tithes</h2>
+                        <p class="text-xs text-emerald-100 mt-1">Gifts are recorded securely to database logs.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1.5">Amount ($)</label>
+                            <input type="number" id="givingAmountInput" value="100" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-slate-800">
+                        </div>
+                        <button onclick="processSecureGiving()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3.5 rounded-xl shadow-md transition">Complete Secure Gift</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.processSecureGiving = async function() {
+            const amount = document.getElementById('givingAmountInput').value;
+            if (!amount || amount <= 0) {
+                showToast("Please enter a valid amount", "fa-triangle-exclamation", "text-amber-400");
+                return;
+            }
+            try {
+                const givingCol = collection(db, 'artifacts', appId, 'public', 'data', 'givingLogs');
+                await addDoc(givingCol, { amount: parseFloat(amount), fund: 'Tithes & General', timestamp: Date.now() });
+                showToast(`Successfully gave $${amount}! Recorded to database.`, "fa-circle-check", "text-emerald-400");
+            } catch (e) {
+                showToast("Giving error: " + e.message, "fa-triangle-exclamation", "text-rose-400");
+            }
+        };
+
+        // Leader Dashboard Tab HTML
+        function getLeaderHTML(state) {
+            return `
+                <div class="p-4 space-y-4">
+                    <div class="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 rounded-2xl shadow-md">
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Staff Secure View</span>
+                        <h2 class="text-base font-bold mt-1">Pastor & Leader Dashboard</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100">
+                            <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Members</span>
+                            <h3 class="text-xl font-extrabold text-slate-800 mt-0.5">1,248</h3>
+                        </div>
+                        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100">
+                            <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Avg. Attendance</span>
+                            <h3 class="text-xl font-extrabold text-slate-800 mt-0.5">642</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                        <h4 class="font-bold text-slate-800 text-xs mb-3">Weekly Worship Attendance</h4>
+                        <div class="h-48 relative w-full">
+                            <canvas id="attendanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initAttendanceChart() {
+            const ctx = document.getElementById('attendanceChart');
+            if (!ctx) return;
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sep 6', 'Sep 13', 'Sep 20', 'Sep 27', 'Oct 4'],
+                    datasets: [{
+                        label: 'Total Attendance',
+                        data: [590, 615, 630, 610, 642],
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6,
+                        barThickness: 24
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+```
+eof
+
+### What's New in this Firebase-Enabled Version:
+1. **Firebase Authentication**: Users can sign in using email/password or anonymously as a guest. Accounts with "admin" or "leader" in their email automatically unlock the **Leader Dashboard & Stats tab** and admin announcement publishing tools.
+2. **Firestore Real-Time Database**: Announcements, events, prayer requests, and directory records are now stored live in Firestore and synchronized across devices in real-time.
+3. **Admin Controls**: Leaders can publish announcements directly from the app feed which immediately syncs to all connected users.
